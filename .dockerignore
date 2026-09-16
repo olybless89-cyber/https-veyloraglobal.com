@@ -1,0 +1,19 @@
+# Large uploaded assets (not needed in production image)
+attached_assets/
+
+# Dev/test artifacts
+node_modules/
+**/node_modules/
+**/.git/
+
+# Build outputs (rebuilt inside Docker)
+**/dist/
+**/.turbo/
+
+# Replit-specific
+.replit
+.local/
+replit.nix
+
+# Logs
+*.log

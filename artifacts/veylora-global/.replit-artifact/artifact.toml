@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Swift Cargo Express Delivery"
+version = "1.0.0"
+id = "artifacts/swift-cargo"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18152
+
+[services.development]
+run = "pnpm --filter @workspace/swift-cargo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/swift-cargo", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/swift-cargo/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18152"
+BASE_PATH = "/"
