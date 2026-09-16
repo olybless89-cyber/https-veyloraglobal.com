@@ -10,6 +10,10 @@ import dashboardRouter from "./dashboard";
 import contactRouter from "./contact";
 import adminEmailRouter from "./adminEmail";
 import adminSmsRouter from "./adminSms";
+import settingsRouter from "./settings";
+import adminSettingsRouter from "./adminSettings";
+import adminInboxRouter from "./adminInbox";
+import webhookResendInboundRouter from "./webhookResendInbound";
 
 const router: IRouter = Router();
 
@@ -24,5 +28,9 @@ router.use(dashboardRouter);
 router.use(contactRouter);
 router.use(adminEmailRouter);
 router.use(adminSmsRouter);
+router.use(settingsRouter);
+router.use(adminSettingsRouter);
+router.use(adminInboxRouter);
+router.use(webhookResendInboundRouter);
 
 export default router;

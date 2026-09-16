@@ -1,13 +1,26 @@
 import * as React from "react"
 import { Link, useLocation } from "wouter"
-import { useGetSession, useLogout } from "@workspace/api-client-react"
-import { Package, LayoutDashboard, Truck, Users, Building, LogOut, Menu, X, Loader2, Settings, Mail, MessageSquare } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { useGetSession, useLogout, customFetch } from "@workspace/api-client-react"
+import { Package, LayoutDashboard, Truck, Users, Building, LogOut, Menu, X, Loader2, Settings, Mail, MessageSquare, Inbox as InboxIcon } from "lucide-react"
+
+interface InboxThread {
+  unreadCount: number
+}
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation()
   const { data: session, isLoading } = useGetSession()
   const logout = useLogout()
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
+
+  const { data: inboxData } = useQuery({
+    queryKey: ["admin-inbox-unread-badge"],
+    queryFn: () => customFetch<{ threads: InboxThread[] }>("/api/admin/inbox"),
+    enabled: !!session?.authenticated,
+    refetchInterval: 30_000,
+  })
+  const unreadCount = inboxData?.threads.reduce((sum, t) => sum + t.unreadCount, 0) ?? 0
 
   React.useEffect(() => {
     if (!isLoading && (!session || !session.authenticated)) {
@@ -40,6 +53,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/shipments", label: "Shipments", icon: Truck },
     { href: "/admin/officers", label: "Officers", icon: Users },
     { href: "/admin/offices", label: "Offices", icon: Building },
+    { href: "/admin/inbox", label: "Inbox", icon: InboxIcon, badge: unreadCount },
     { href: "/admin/send-email", label: "Send Email", icon: Mail },
     { href: "/admin/send-sms", label: "Send SMS", icon: MessageSquare },
     { href: "/admin/settings", label: "Settings", icon: Settings },
@@ -53,19 +67,24 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/40 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <div className="md:hidden bg-primary text-primary-foreground p-4 flex items-center justify-between z-20 sticky top-0">
+      <div className="md:hidden bg-primary text-primary-foreground h-16 px-4 flex items-center justify-between z-20 sticky top-0">
         <Link href="/admin" className="flex items-center gap-2">
           <Package className="h-6 w-6 text-accent" />
           <span className="font-bold">Veylora Admin</span>
         </Link>
-        <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+        <button
+          aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+        >
           {isSidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar — on mobile it slides in BELOW the sticky mobile header (top-16)
+          so the header never overlaps/hides the first nav link; on desktop it's
+          a full-height sticky column starting at the very top (md:top-0). */}
       <aside className={`
-        fixed md:sticky top-0 left-0 h-screen w-64 bg-sidebar text-sidebar-foreground z-10 transition-transform duration-300 ease-in-out flex flex-col
+        fixed md:sticky top-16 md:top-0 left-0 h-[calc(100vh-4rem)] md:h-screen w-64 bg-sidebar text-sidebar-foreground z-10 transition-transform duration-300 ease-in-out flex flex-col
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}>
         <div className="p-6 hidden md:block">
@@ -80,8 +99,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             const Icon = link.icon
             const active = isActive(link.href)
             return (
-              <Link 
-                key={link.href} 
+              <Link
+                key={link.href}
                 href={link.href}
                 onClick={() => setIsSidebarOpen(false)}
                 className={`
@@ -90,7 +109,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 `}
               >
                 <Icon className={`h-5 w-5 ${active ? "text-sidebar-primary" : ""}`} />
-                {link.label}
+                <span className="flex-1">{link.label}</span>
+                {!!link.badge && (
+                  <span className="min-w-5 h-5 px-1.5 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center">
+                    {link.badge > 9 ? "9+" : link.badge}
+                  </span>
+                )}
               </Link>
             )
           })}

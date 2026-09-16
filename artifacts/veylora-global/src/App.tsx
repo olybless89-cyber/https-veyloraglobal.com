@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider, MutationCache } from "@tanstack/react
 import { Toaster } from "@/components/ui/toaster"
 import { toast } from "@/hooks/use-toast"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ApplyBranding } from "@/components/ApplyBranding"
 
 import Home from "@/pages/Home"
 import About from "@/pages/About"
@@ -21,6 +22,7 @@ import Offices from "@/pages/admin/Offices"
 import SettingsPage from "@/pages/admin/Settings"
 import SendEmail from "@/pages/admin/SendEmail"
 import SendSms from "@/pages/admin/SendSms"
+import Inbox from "@/pages/admin/Inbox"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,6 +70,7 @@ function Router() {
       <Route path="/admin/settings" component={SettingsPage} />
       <Route path="/admin/send-email" component={SendEmail} />
       <Route path="/admin/send-sms" component={SendSms} />
+      <Route path="/admin/inbox" component={Inbox} />
 
       <Route component={NotFound} />
     </Switch>
@@ -78,6 +81,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <ApplyBranding />
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <Router />
         </WouterRouter>

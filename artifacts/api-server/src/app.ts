@@ -46,7 +46,17 @@ app.use(
   }),
 );
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
+app.use(
+  express.json({
+    // Stash the raw request body alongside the parsed one so the Resend
+    // inbound-email webhook route can verify its signature against the
+    // exact bytes Resend sent (signature verification breaks if it's
+    // computed over a re-serialized JSON object instead).
+    verify: (req, _res, buf) => {
+      (req as unknown as { rawBody?: Buffer }).rawBody = Buffer.from(buf);
+    },
+  }),
+);
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({

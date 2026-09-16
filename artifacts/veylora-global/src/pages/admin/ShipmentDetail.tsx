@@ -359,7 +359,7 @@ export default function ShipmentDetail() {
               <div className="space-y-4">
                 {isLoadingUpdates ? (
                   <div className="text-center text-sm text-muted-foreground py-4">Loading updates...</div>
-                ) : trackUpdates && trackUpdates.length > 0 ? (
+                ) : Array.isArray(trackUpdates) && trackUpdates.length > 0 ? (
                   <div className="relative pl-6 space-y-6 before:absolute before:inset-y-0 before:left-2 before:w-0.5 before:bg-muted-foreground/20">
                     {trackUpdates.map((update) => (
                       <div key={update.id} className="relative group">

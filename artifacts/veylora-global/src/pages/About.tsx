@@ -2,19 +2,22 @@ import { Link } from "wouter"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { Target, Users, MapPin, Award } from "lucide-react"
+import { useSiteSettings } from "@/lib/site-settings"
 
 export default function About() {
+  const { data: settings } = useSiteSettings()
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       <main className="flex-1">
         {/* Page Header */}
         <section className="bg-primary py-16 md:py-24 text-primary-foreground">
           <div className="container mx-auto px-4 md:px-6">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">About Veylora Global</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">About {settings.site_name}</h1>
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl">
-              Delivering excellence across borders since 1998. We are your trusted partner in global logistics.
+              Delivering excellence across borders since {settings.founding_year}. We are your trusted partner in global logistics.
             </p>
           </div>
         </section>
@@ -26,7 +29,7 @@ export default function About() {
                 <h2 className="text-3xl font-bold text-primary mb-6">Our Story</h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed text-lg">
                   <p>
-                    Founded in 1998, Veylora Global began with a single truck and a vision to provide reliable local deliveries. Today, we have evolved into a global logistics powerhouse, managing complex supply chains for some of the world's most demanding industries.
+                    Founded in {settings.founding_year}, {settings.site_name} began with a single truck and a vision to provide reliable local deliveries. Today, we have evolved into a global logistics powerhouse, managing complex supply chains for some of the world's most demanding industries.
                   </p>
                   <p>
                     Our journey has been defined by a relentless commitment to innovation and customer service. By investing heavily in modern fleets, advanced tracking technology, and rigorous training, we ensure that every parcel, pallet, and container is handled with the utmost care.

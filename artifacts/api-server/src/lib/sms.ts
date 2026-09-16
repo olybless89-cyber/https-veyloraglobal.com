@@ -2,9 +2,11 @@
 // depending on the recipient's number.
 //
 // Local numbers (+234 / 0-prefixed Nigerian mobile numbers) go through Termii,
-// everything else goes through Twilio. Configure via env vars:
+// everything else goes through Twilio. Credentials are read from the admin
+// Settings (Integrations tab) first, falling back to env vars:
 //   TERMII_API_KEY, TERMII_SENDER_ID (optional, defaults to "Veylora")
 //   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
+import { getSettingsMap } from "./settings";
 
 export type SmsProvider = "termii" | "twilio";
 
@@ -21,11 +23,12 @@ function toTermiiFormat(phone: string): string {
 }
 
 async function sendViaTermii(to: string, message: string): Promise<void> {
-  const apiKey = process.env.TERMII_API_KEY;
+  const settings = await getSettingsMap(["termii_api_key", "termii_sender_id"]);
+  const apiKey = settings.termii_api_key ?? process.env.TERMII_API_KEY;
   if (!apiKey) {
-    throw new Error("TERMII_API_KEY is not configured");
+    throw new Error("Termii API key is not configured. Set it in Admin → Settings → Integrations.");
   }
-  const senderId = process.env.TERMII_SENDER_ID || "Veylora";
+  const senderId = settings.termii_sender_id ?? process.env.TERMII_SENDER_ID ?? "Veylora";
 
   const response = await fetch("https://api.ng.termii.com/api/sms/send", {
     method: "POST",
@@ -56,12 +59,13 @@ async function sendViaTermii(to: string, message: string): Promise<void> {
 }
 
 async function sendViaTwilio(to: string, message: string): Promise<void> {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID;
-  const authToken = process.env.TWILIO_AUTH_TOKEN;
-  const from = process.env.TWILIO_FROM_NUMBER;
+  const settings = await getSettingsMap(["twilio_account_sid", "twilio_auth_token", "twilio_from_number"]);
+  const accountSid = settings.twilio_account_sid ?? process.env.TWILIO_ACCOUNT_SID;
+  const authToken = settings.twilio_auth_token ?? process.env.TWILIO_AUTH_TOKEN;
+  const from = settings.twilio_from_number ?? process.env.TWILIO_FROM_NUMBER;
   if (!accountSid || !authToken || !from) {
     throw new Error(
-      "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER must be configured",
+      "Twilio Account SID, Auth Token and From Number must be configured in Admin → Settings → Integrations.",
     );
   }
 

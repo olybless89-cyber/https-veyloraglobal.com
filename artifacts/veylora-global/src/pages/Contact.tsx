@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useSubmitContact } from "@workspace/api-client-react"
 import { Mail, Phone, MapPin, CheckCircle2 } from "lucide-react"
+import { useSiteSettings } from "@/lib/site-settings"
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function Contact() {
     message: ""
   })
   const contactMutation = useSubmitContact()
+  const { data: settings } = useSiteSettings()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,19 +48,18 @@ export default function Contact() {
                   <MapPin className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-lg mb-2">Global Headquarters</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  1200 Logistics Way, Suite 400<br/>
-                  New York, NY 10001, USA
+                <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+                  {settings.office_address}
                 </p>
               </div>
-              
+
               <div className="bg-card p-6 rounded-xl border shadow-sm">
                 <div className="h-12 w-12 bg-accent/10 text-accent rounded-lg flex items-center justify-center mb-4">
                   <Phone className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-lg mb-2">Call Us</h3>
-                <p className="text-muted-foreground text-sm mb-1">+1 (800) 555-0199 (Toll-Free)</p>
-                <p className="text-muted-foreground text-sm">+1 (212) 555-0188 (Intl)</p>
+                <p className="text-muted-foreground text-sm mb-1">{settings.contact_phone} (Toll-Free)</p>
+                <p className="text-muted-foreground text-sm">{settings.contact_phone_secondary} (Intl)</p>
               </div>
 
               <div className="bg-card p-6 rounded-xl border shadow-sm">
@@ -66,8 +67,8 @@ export default function Contact() {
                   <Mail className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-lg mb-2">Email Us</h3>
-                <p className="text-muted-foreground text-sm mb-1">support@veyloraglobal.com</p>
-                <p className="text-muted-foreground text-sm">sales@veyloraglobal.com</p>
+                <p className="text-muted-foreground text-sm mb-1">{settings.contact_email}</p>
+                <p className="text-muted-foreground text-sm">{settings.contact_email_secondary}</p>
               </div>
             </div>
 

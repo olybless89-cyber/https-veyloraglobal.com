@@ -1,11 +1,13 @@
 import * as React from "react"
 import { Link, useLocation } from "wouter"
-import { Plane, Ship, Truck, Menu, X, Package } from "lucide-react"
+import { Menu, X, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useSiteSettings } from "@/lib/site-settings"
 
 export function Navbar() {
   const [location] = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+  const { data: settings } = useSiteSettings()
 
   const links = [
     { href: "/", label: "Home" },
@@ -25,8 +27,8 @@ export function Navbar() {
             <Package className="h-6 w-6" />
           </div>
           <span className="font-bold text-xl tracking-tight leading-none">
-            Veylora Global<br />
-            <span className="text-accent text-sm uppercase tracking-wider">Express Delivery</span>
+            {settings.site_name}<br />
+            <span className="text-accent text-sm uppercase tracking-wider">{settings.tagline}</span>
           </span>
         </Link>
 
@@ -56,6 +58,7 @@ export function Navbar() {
         {/* Mobile Toggle */}
         <button
           className="md:hidden p-2"
+          aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}

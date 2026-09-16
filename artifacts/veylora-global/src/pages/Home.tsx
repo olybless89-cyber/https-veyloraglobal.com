@@ -8,10 +8,12 @@ import { HeroSlider } from "@/components/home/HeroSlider"
 import { Plane, Ship, Truck, Globe2, ShieldCheck, Clock, ArrowRight } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { useSiteSettings } from "@/lib/site-settings"
 
 export default function Home() {
   const [consNo, setConsNo] = useState("")
   const [, setLocation] = useLocation()
+  const { data: settings } = useSiteSettings()
   
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,7 +115,7 @@ export default function Home() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Choose Veylora Global?</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">Why Choose {settings.site_name}?</h2>
                 <p className="text-primary-foreground/80 text-lg mb-8">
                   We don't just move boxes; we deliver promises. Our advanced infrastructure and dedicated team ensure your cargo reaches its destination safely and on schedule.
                 </p>
@@ -170,7 +172,7 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl md:text-5xl font-black mb-6">Ready to ship with us?</h2>
             <p className="text-xl mb-10 max-w-2xl mx-auto text-white/90">
-              Get a customized quote for your logistics needs and experience the Veylora Global difference today.
+              Get a customized quote for your logistics needs and experience the {settings.site_name} difference today.
             </p>
             <Link href="/get-quote">
               <Button size="xl" className="bg-primary text-primary-foreground hover:bg-primary/90 font-bold text-lg px-10">

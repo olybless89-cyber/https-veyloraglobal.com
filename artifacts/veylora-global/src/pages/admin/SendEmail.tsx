@@ -1,6 +1,8 @@
 import * as React from "react"
 import { AdminLayout } from "@/components/layout/AdminLayout"
 import { Mail, Send, CheckCircle, AlertCircle } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { customFetch } from "@workspace/api-client-react"
 
 type Status = "idle" | "loading" | "success" | "error"
 
@@ -10,6 +12,14 @@ export default function SendEmail() {
   const [message, setMessage] = React.useState("")
   const [status, setStatus] = React.useState<Status>("idle")
   const [feedback, setFeedback] = React.useState("")
+
+  const { data: adminSettings } = useQuery({
+    queryKey: ["admin-settings"],
+    queryFn: () => customFetch<{ integrations: Array<{ key: string; value: string }> }>("/api/admin/settings"),
+    staleTime: 60 * 1000,
+  })
+  const fromDisplay =
+    adminSettings?.integrations.find((f) => f.key === "from_email")?.value || "your configured sender address"
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,7 +59,7 @@ export default function SendEmail() {
         </h1>
         <p className="text-muted-foreground mt-1">
           Compose and send emails to clients from{" "}
-          <span className="font-medium text-foreground">support@veyloraglobal.com</span>
+          <span className="font-medium text-foreground">{fromDisplay}</span>
         </p>
       </div>
 
@@ -58,7 +68,7 @@ export default function SendEmail() {
           {/* Header bar */}
           <div className="p-4 border-b bg-muted/30 flex items-center gap-2 text-sm text-muted-foreground">
             <span className="font-medium text-foreground">From:</span>
-            Veylora Global &lt;support@veyloraglobal.com&gt;
+            {fromDisplay}
           </div>
 
           <form onSubmit={handleSubmit} className="divide-y">

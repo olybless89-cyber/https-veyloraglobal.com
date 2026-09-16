@@ -4,14 +4,16 @@ import { useLogin, useGetSession } from "@workspace/api-client-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Package, Lock, AlertCircle } from "lucide-react"
+import { useSiteSettings } from "@/lib/site-settings"
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-  
+
   const [, setLocation] = useLocation()
   const loginMutation = useLogin()
+  const { data: settings } = useSiteSettings()
   
   // If already logged in, redirect
   const { data: session } = useGetSession()
@@ -57,7 +59,7 @@ export default function AdminLogin() {
             <Package className="h-8 w-8 text-accent" />
           </div>
           <h1 className="text-2xl font-bold text-primary">Admin Portal</h1>
-          <p className="text-muted-foreground text-sm mt-1">Veylora Global Operations Management</p>
+          <p className="text-muted-foreground text-sm mt-1">{settings.site_name} Operations Management</p>
         </div>
         
         <div className="p-8">
