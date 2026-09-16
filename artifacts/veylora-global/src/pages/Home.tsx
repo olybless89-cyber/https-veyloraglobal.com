@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { HeroSlider } from "@/components/home/HeroSlider"
 import { Plane, Ship, Truck, Globe2, ShieldCheck, Clock, ArrowRight } from "lucide-react"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
@@ -24,10 +25,9 @@ export default function Home() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="relative bg-primary text-primary-foreground py-24 md:py-32 overflow-hidden">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1586528116311-ad8ed7c15902?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center" />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
-          
+        <section className="relative bg-primary text-primary-foreground py-24 md:py-32 overflow-hidden min-h-[640px] flex items-center">
+          <HeroSlider />
+
           <div className="container relative mx-auto px-4 md:px-6 z-10 flex flex-col items-center text-center">
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-4xl leading-tight mb-6">
               Global Logistics & <br className="hidden md:block"/> 
