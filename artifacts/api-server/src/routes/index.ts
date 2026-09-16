@@ -9,6 +9,7 @@ import officesRouter from "./offices";
 import dashboardRouter from "./dashboard";
 import contactRouter from "./contact";
 import adminEmailRouter from "./adminEmail";
+import adminSmsRouter from "./adminSms";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(officesRouter);
 router.use(dashboardRouter);
 router.use(contactRouter);
 router.use(adminEmailRouter);
+router.use(adminSmsRouter);
 
 export default router;

@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useLocation } from "wouter"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { LiveMap } from "@/components/map/LiveMap"
 import { useTrackShipment } from "@workspace/api-client-react"
-import { Package, Search, MapPin, Calendar, Box, Weight, Clock, Info, CheckCircle2, AlertCircle, Ship } from "lucide-react"
+import { Package, Search, MapPin, Calendar, Box, Weight, Clock, Info, CheckCircle2, AlertCircle, Ship, Radio } from "lucide-react"
 import { format } from "date-fns"
+
+const LIVE_REFRESH_INTERVAL_MS = 20_000
 
 export default function Track() {
   const [location] = useLocation()
@@ -25,7 +28,7 @@ export default function Track() {
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault()
     if (!consNo.trim()) return
-    
+
     // Update URL without full reload
     window.history.pushState({}, '', `/track?consNo=${encodeURIComponent(consNo)}`)
     trackMutation.mutate({ data: { consNo } })
@@ -34,6 +37,24 @@ export default function Track() {
   const trackingData = trackMutation.data
   const isLoading = trackMutation.isPending
   const isError = trackMutation.isError
+
+  // Live refresh: silently re-fetch the tracked shipment on an interval so
+  // an admin-updated live location (or new status) shows up without the
+  // visitor having to resubmit the form.
+  const trackedConsNo = trackingData?.courier?.consNo
+  const trackMutationRef = useRef(trackMutation)
+  trackMutationRef.current = trackMutation
+  useEffect(() => {
+    if (!trackedConsNo) return
+    const id = window.setInterval(() => {
+      trackMutationRef.current.mutate({ data: { consNo: trackedConsNo } })
+    }, LIVE_REFRESH_INTERVAL_MS)
+    return () => window.clearInterval(id)
+  }, [trackedConsNo])
+
+  const lat = trackingData?.courier?.lat ? parseFloat(trackingData.courier.lat) : NaN
+  const lng = trackingData?.courier?.lon ? parseFloat(trackingData.courier.lon) : NaN
+  const hasLiveLocation = Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -75,6 +96,22 @@ export default function Track() {
               <div>
                 <h3 className="font-bold text-lg mb-1">Tracking Not Found</h3>
                 <p>We couldn't find any shipment matching the consignment number "{consNo}". Please check the number and try again.</p>
+              </div>
+            </div>
+          )}
+
+          {trackingData && trackingData.courier && hasLiveLocation && (
+            <div className="bg-card border rounded-xl shadow-sm overflow-hidden mb-8 max-w-5xl mx-auto">
+              <div className="flex items-center justify-between px-6 py-4 border-b">
+                <h3 className="font-bold text-lg text-primary flex items-center gap-2">
+                  <Radio className="h-5 w-5 text-accent" /> Live Location
+                </h3>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full bg-accent animate-pulse" /> Auto-refreshing
+                </span>
+              </div>
+              <div className="h-80">
+                <LiveMap lat={lat} lng={lng} label={`${trackingData.courier.consNo} — ${trackingData.courier.status}`} />
               </div>
             </div>
           )}

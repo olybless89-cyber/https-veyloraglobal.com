@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Link, useLocation } from "wouter"
 import { useGetSession, useLogout } from "@workspace/api-client-react"
-import { Package, LayoutDashboard, Truck, Users, Building, LogOut, Menu, X, Loader2, Settings, Mail } from "lucide-react"
+import { Package, LayoutDashboard, Truck, Users, Building, LogOut, Menu, X, Loader2, Settings, Mail, MessageSquare } from "lucide-react"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation()
@@ -41,6 +41,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/officers", label: "Officers", icon: Users },
     { href: "/admin/offices", label: "Offices", icon: Building },
     { href: "/admin/send-email", label: "Send Email", icon: Mail },
+    { href: "/admin/send-sms", label: "Send SMS", icon: MessageSquare },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ]
 

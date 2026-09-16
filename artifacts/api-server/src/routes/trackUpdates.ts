@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, trackUpdatesTable, couriersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import { sendSms } from "../lib/sms";
 
 const router = Router();
 
@@ -33,10 +34,10 @@ router.post("/couriers/:consNo/track-updates", requireAuth, async (req, res) => 
   const { consNo } = req.params;
   const body = req.body;
 
-  // Get courier id
+  // Get courier id (and recipient phone, for the SMS notification below)
   try {
     const [courier] = await db
-      .select({ id: couriersTable.id })
+      .select({ id: couriersTable.id, rName: couriersTable.rName, rPhone: couriersTable.rPhone })
       .from(couriersTable)
       .where(eq(couriersTable.consNo, consNo))
       .limit(1);
@@ -60,6 +61,16 @@ router.post("/couriers/:consNo/track-updates", requireAuth, async (req, res) => 
       .returning();
 
     res.status(201).json(created);
+
+    // Best-effort SMS notification to the recipient — never blocks or fails
+    // the response above; a delivery failure is only logged.
+    const recipientPhone = (body.rPhone || courier?.rPhone || "").trim();
+    if (recipientPhone) {
+      const text = `Veylora Global: Shipment ${consNo} update - ${body.newStatus}. Location: ${body.currentLocation}, ${body.currentCity}.`;
+      sendSms(recipientPhone, text).catch((smsErr) => {
+        req.log.warn({ err: smsErr, consNo }, "Track update SMS notification failed (non-blocking)");
+      });
+    }
   } catch (err) {
     req.log.error({ err }, "Add track update error");
     res.status(500).json({ error: "Internal server error" });

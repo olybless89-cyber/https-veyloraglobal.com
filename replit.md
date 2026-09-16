@@ -10,6 +10,9 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Email (optional, admin "Send Email" + contact form replies): `RESEND_API_KEY`, `FROM_EMAIL`, `ADMIN_EMAIL`
+- SMS (optional, admin "Send SMS" + automatic status-update texts): `TERMII_API_KEY`, `TERMII_SENDER_ID` for Nigerian numbers; `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` for everything else. A send is routed automatically by the recipient's number — a local Nigerian number (`+234…` / `0…`) goes through Termii, any other number goes through Twilio. Either provider can be left unconfigured if you only need the other; sends to that provider will fail loudly with a clear error until its env vars are set.
+- Live location map (Track page + admin shipment editor): no API key needed — uses Leaflet with OpenStreetMap tiles. An admin sets a shipment's current `lat`/`lon` by clicking the map in the shipment editor; the public tracking page shows it and polls for updates every 20s.
 
 ## Stack
 

@@ -20,6 +20,7 @@ import Officers from "@/pages/admin/Officers"
 import Offices from "@/pages/admin/Offices"
 import SettingsPage from "@/pages/admin/Settings"
 import SendEmail from "@/pages/admin/SendEmail"
+import SendSms from "@/pages/admin/SendSms"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/admin/offices" component={Offices} />
       <Route path="/admin/settings" component={SettingsPage} />
       <Route path="/admin/send-email" component={SendEmail} />
+      <Route path="/admin/send-sms" component={SendSms} />
 
       <Route component={NotFound} />
     </Switch>

@@ -15,8 +15,9 @@ import { AdminLayout } from "@/components/layout/AdminLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { LocationPicker } from "@/components/map/LocationPicker"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Save, Plus, Trash2, MapPin, Clock, History, Package } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, MapPin, Clock, History, Package, Radio } from "lucide-react"
 
 export default function ShipmentDetail() {
   const [, params] = useRoute("/admin/shipments/:id")
@@ -42,7 +43,8 @@ export default function ShipmentDetail() {
     rName: "", rMail: "", rPhone: "", rAdd: "",
     type: "", weight: "", invoiceNo: "", qty: 1, freight: "",
     mode: "", pmode: "", pickDate: "", deptDate: "",
-    status: "", product: "", origin: "", destination: ""
+    status: "", product: "", origin: "", destination: "",
+    lat: "", lon: ""
   })
 
   // Update form when data loads
@@ -70,7 +72,9 @@ export default function ShipmentDetail() {
         status: shipment.status || "",
         product: shipment.product || "",
         origin: shipment.origin || "",
-        destination: shipment.destination || ""
+        destination: shipment.destination || "",
+        lat: shipment.lat || "",
+        lon: shipment.lon || ""
       })
     }
   }, [shipment, isNew])
@@ -251,6 +255,50 @@ export default function ShipmentDetail() {
                 </div>
               </div>
             </div>
+
+            {/* Live Location */}
+            {!isNew && (
+              <div>
+                <h3 className="text-lg font-bold border-b pb-2 mb-4 text-primary flex items-center gap-2">
+                  <Radio className="h-5 w-5" /> Live Location
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Click on the map to set this shipment's current position — it shows up as a live-updating pin on the public tracking page. Leave blank to hide the map there.
+                </p>
+                <div className="grid md:grid-cols-2 gap-6 items-start">
+                  <LocationPicker
+                    lat={formData.lat ? parseFloat(formData.lat) : null}
+                    lng={formData.lon ? parseFloat(formData.lon) : null}
+                    onChange={(lat, lng) => {
+                      handleChange("lat", lat.toFixed(6))
+                      handleChange("lon", lng.toFixed(6))
+                    }}
+                  />
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Latitude</label>
+                        <Input value={formData.lat} onChange={(e) => handleChange("lat", e.target.value)} placeholder="e.g. 6.5244" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Longitude</label>
+                        <Input value={formData.lon} onChange={(e) => handleChange("lon", e.target.value)} placeholder="e.g. 3.3792" />
+                      </div>
+                    </div>
+                    {(formData.lat || formData.lon) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { handleChange("lat", ""); handleChange("lon", "") }}
+                      >
+                        Clear location
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <Button type="submit" size="lg" className="font-bold w-full md:w-auto" disabled={createMutation.isPending || updateMutation.isPending}>
               <Save className="h-5 w-5 mr-2" />
