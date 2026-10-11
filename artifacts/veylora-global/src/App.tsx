@@ -17,6 +17,7 @@ import AdminLogin from "@/pages/admin/Login"
 import Dashboard from "@/pages/admin/Dashboard"
 import Shipments from "@/pages/admin/Shipments"
 import ShipmentDetail from "@/pages/admin/ShipmentDetail"
+import ShipmentReceipt from "@/pages/admin/ShipmentReceipt"
 import Officers from "@/pages/admin/Officers"
 import Offices from "@/pages/admin/Offices"
 import SettingsPage from "@/pages/admin/Settings"
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/admin" component={Dashboard} />
       <Route path="/admin/shipments" component={Shipments} />
       <Route path="/admin/shipments/:id" component={ShipmentDetail} />
+      <Route path="/admin/shipments/:id/receipt" component={ShipmentReceipt} />
       <Route path="/admin/officers" component={Officers} />
       <Route path="/admin/offices" component={Offices} />
       <Route path="/admin/settings" component={SettingsPage} />

@@ -13,6 +13,22 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+// Tracking/consignment number generator. Excludes visually-ambiguous
+// characters (0/O, 1/I) so a staff member reading a receipt aloud or
+// retyping one from a printout doesn't trip over them.
+const CONS_NO_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+function generateConsNo(): string {
+  let suffix = "";
+  for (let i = 0; i < 8; i++) {
+    suffix += CONS_NO_ALPHABET[Math.floor(Math.random() * CONS_NO_ALPHABET.length)];
+  }
+  return `VG-${suffix}`;
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return !!err && typeof err === "object" && (err as { code?: string }).code === "23505";
+}
+
 // GET /api/couriers
 router.get("/couriers", requireAuth, async (req, res) => {
   try {
@@ -27,41 +43,70 @@ router.get("/couriers", requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/couriers
+// POST /api/couriers — the consignment/tracking number is auto-generated
+// server-side when the client doesn't supply one (or supplies a blank
+// string), so creating a shipment never requires the admin to make one up.
+// If the client DOES supply one and it collides with an existing shipment,
+// that's surfaced as a clear 409 rather than failing an auto-generated
+// value out from under them.
 router.post("/couriers", requireAuth, async (req, res) => {
-  try {
-    const body = req.body;
-    const [created] = await db.insert(couriersTable).values({
-      consNo: body.consNo,
-      sName: body.sName,
-      sMail: body.sMail,
-      sPhone: body.sPhone,
-      sAdd: body.sAdd,
-      rName: body.rName,
-      rMail: body.rMail,
-      rPhone: body.rPhone,
-      rAdd: body.rAdd,
-      type: body.type,
-      weight: body.weight,
-      invoiceNo: body.invoiceNo,
-      qty: body.qty ?? 1,
-      freight: body.freight,
-      mode: body.mode,
-      pmode: body.pmode,
-      pickDate: body.pickDate,
-      deptDate: body.deptDate,
-      status: body.status,
-      product: body.product,
-      origin: body.origin,
-      destination: body.destination,
-      lat: body.lat ?? "",
-      lon: body.lon ?? "",
-    }).returning();
-    res.status(201).json(created);
-  } catch (err) {
-    req.log.error({ err }, "Create courier error");
-    res.status(500).json({ error: "Internal server error" });
+  const body = req.body;
+  const requestedConsNo = typeof body.consNo === "string" ? body.consNo.trim() : "";
+  const MAX_ATTEMPTS = 5;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const consNo = attempt === 0 && requestedConsNo ? requestedConsNo : generateConsNo();
+    try {
+      const [created] = await db.insert(couriersTable).values({
+        consNo,
+        sName: body.sName,
+        sMail: body.sMail,
+        sPhone: body.sPhone,
+        sAdd: body.sAdd,
+        rName: body.rName,
+        rMail: body.rMail,
+        rPhone: body.rPhone,
+        rAdd: body.rAdd,
+        type: body.type,
+        weight: body.weight,
+        invoiceNo: body.invoiceNo,
+        qty: body.qty ?? 1,
+        freight: body.freight,
+        mode: body.mode,
+        pmode: body.pmode,
+        pickDate: body.pickDate,
+        deptDate: body.deptDate,
+        status: body.status,
+        product: body.product,
+        origin: body.origin,
+        destination: body.destination,
+        lat: body.lat ?? "",
+        lon: body.lon ?? "",
+      }).returning();
+      res.status(201).json(created);
+      return;
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        if (attempt === 0 && requestedConsNo) {
+          // The admin typed a specific number and it's taken — don't
+          // silently swap it for a generated one, tell them plainly.
+          res.status(409).json({
+            error: `Consignment number "${requestedConsNo}" is already in use. Try a different one, or clear the field to auto-generate.`,
+          });
+          return;
+        }
+        // An auto-generated number collided (astronomically unlikely with
+        // 8 random chars, but free to check for) — just try another.
+        continue;
+      }
+      req.log.error({ err }, "Create courier error");
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
   }
+
+  req.log.error("Create courier error: exhausted consignment-number generation attempts");
+  res.status(500).json({ error: "Could not generate a unique consignment number. Please try again." });
 });
 
 // GET /api/couriers/:id

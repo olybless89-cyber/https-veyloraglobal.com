@@ -17,35 +17,51 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { LocationPicker } from "@/components/map/LocationPicker"
 import { useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Save, Plus, Trash2, MapPin, Clock, History, Package, Radio } from "lucide-react"
+import { ArrowLeft, Save, Plus, Trash2, MapPin, Clock, History, Package, Radio, RefreshCw, Printer } from "lucide-react"
+import { Link } from "wouter"
+
+// Client-side mirror of the server's generator — used only to prefill the
+// field so the admin sees a real-looking number immediately instead of a
+// blank box. The server generates its own on submit if this is left as-is
+// or cleared, and has final say on uniqueness either way.
+const CONS_NO_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+function generateConsNo(): string {
+  let suffix = ""
+  for (let i = 0; i < 8; i++) {
+    suffix += CONS_NO_ALPHABET[Math.floor(Math.random() * CONS_NO_ALPHABET.length)]
+  }
+  return `VG-${suffix}`
+}
 
 export default function ShipmentDetail() {
   const [, params] = useRoute("/admin/shipments/:id")
   const [, setLocation] = useLocation()
   const queryClient = useQueryClient()
-  
+
   const id = params?.id
   const isNew = !id || id === "new"
   const numericId = isNew ? 0 : parseInt(id, 10)
 
   // Fetch Shipment
-  const { data: shipment, isLoading: isLoadingShipment } = useGetCourier(numericId, { 
-    query: { enabled: !isNew && !isNaN(numericId), queryKey: getGetCourierQueryKey(numericId) } 
+  const { data: shipment, isLoading: isLoadingShipment } = useGetCourier(numericId, {
+    query: { enabled: !isNew && !isNaN(numericId), queryKey: getGetCourierQueryKey(numericId) }
   })
 
   // Mutations
   const createMutation = useCreateCourier()
   const updateMutation = useUpdateCourier()
 
-  // Form State
-  const [formData, setFormData] = useState({
-    consNo: "", sName: "", sMail: "", sPhone: "", sAdd: "",
+  // Form State — a new shipment starts with a freshly generated tracking
+  // number already filled in (editable, or regenerate it) rather than an
+  // empty box the admin has to make something up for.
+  const [formData, setFormData] = useState(() => ({
+    consNo: isNew ? generateConsNo() : "", sName: "", sMail: "", sPhone: "", sAdd: "",
     rName: "", rMail: "", rPhone: "", rAdd: "",
     type: "", weight: "", invoiceNo: "", qty: 1, freight: "",
     mode: "", pmode: "", pickDate: "", deptDate: "",
     status: "", product: "", origin: "", destination: "",
     lat: "", lon: ""
-  })
+  }))
 
   // Update form when data loads
   useEffect(() => {
@@ -161,9 +177,16 @@ export default function ShipmentDetail() {
         <Button variant="outline" size="icon" onClick={() => setLocation("/admin/shipments")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold text-primary">{isNew ? "Create Shipment" : `Shipment: ${shipment?.consNo}`}</h1>
         </div>
+        {!isNew && (
+          <Link href={`/admin/shipments/${numericId}/receipt`}>
+            <Button variant="outline" className="font-medium">
+              <Printer className="h-4 w-4 mr-2" /> Print Receipt
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -178,7 +201,27 @@ export default function ShipmentDetail() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Consignment No</label>
-                  <Input value={formData.consNo} onChange={(e) => handleChange("consNo", e.target.value)} required />
+                  {isNew ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={formData.consNo}
+                        onChange={(e) => handleChange("consNo", e.target.value)}
+                        required
+                        className="font-mono"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Generate a new tracking number"
+                        onClick={() => handleChange("consNo", generateConsNo())}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Input value={formData.consNo} disabled className="font-mono bg-muted/40" />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Status</label>

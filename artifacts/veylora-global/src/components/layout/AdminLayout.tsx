@@ -67,7 +67,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/40 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <div className="md:hidden bg-primary text-primary-foreground h-16 px-4 flex items-center justify-between z-20 sticky top-0">
+      <div className="print:hidden md:hidden bg-primary text-primary-foreground h-16 px-4 flex items-center justify-between z-20 sticky top-0">
         <Link href="/admin" className="flex items-center gap-2">
           <Package className="h-6 w-6 text-accent" />
           <span className="font-bold">Veylora Admin</span>
@@ -84,7 +84,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           so the header never overlaps/hides the first nav link; on desktop it's
           a full-height sticky column starting at the very top (md:top-0). */}
       <aside className={`
-        fixed md:sticky top-16 md:top-0 left-0 h-[calc(100vh-4rem)] md:h-screen w-64 bg-sidebar text-sidebar-foreground z-10 transition-transform duration-300 ease-in-out flex flex-col
+        print:hidden fixed md:sticky top-16 md:top-0 left-0 h-[calc(100vh-4rem)] md:h-screen w-64 bg-sidebar text-sidebar-foreground z-10 transition-transform duration-300 ease-in-out flex flex-col
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}>
         <div className="p-6 hidden md:block">
@@ -135,7 +135,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-10 w-full overflow-x-hidden">
+      <main className="flex-1 p-6 md:p-10 w-full overflow-x-hidden print:p-0 print:w-full">
         {children}
       </main>
 
