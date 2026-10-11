@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { sendEmail } from "../lib/resend";
+import { sendEmail, getFromAddress } from "../lib/resend";
+import { db, emailsTable } from "@workspace/db";
 
 const router = Router();
 
@@ -44,6 +45,32 @@ router.post("/admin/send-email", async (req, res) => {
     `;
 
     await sendEmail(to, subject, html);
+
+    // Log it the same way an inbox reply is logged, so it shows up as a
+    // thread in Admin → Inbox (previously this route sent via Resend but
+    // never recorded anything — a sent email vanished with no way to see
+    // it was sent, and no "Sent" view existed anywhere in the admin).
+    // threadId is keyed by the counterpart's address (lowercased/trimmed),
+    // matching the convention the inbound webhook uses, so a future reply
+    // from this recipient lands in the same thread instead of a new one.
+    const fromAddress = await getFromAddress();
+    try {
+      await db.insert(emailsTable).values({
+        direction: "outbound",
+        fromAddress,
+        toAddress: to,
+        subject,
+        textBody: message,
+        htmlBody: html,
+        messageId: "",
+        threadId: to.toLowerCase().trim(),
+        isRead: true,
+      });
+    } catch (logErr) {
+      // The email itself already sent successfully — don't fail the
+      // request just because the inbox log insert hiccupped.
+      req.log.error({ err: logErr }, "Sent email but failed to log it to the inbox");
+    }
 
     req.log.info({ to, subject, sentBy: req.session.userName }, "Admin email sent");
     res.json({ success: true, message: `Email sent to ${to}` });

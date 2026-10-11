@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "wouter"
 import { AdminLayout } from "@/components/layout/AdminLayout"
 import { Mail, Send, CheckCircle, AlertCircle } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
@@ -112,9 +113,14 @@ export default function SendEmail() {
 
             {/* Feedback */}
             {status === "success" && (
-              <div className="mx-5 mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-4 py-3">
-                <CheckCircle className="h-4 w-4 shrink-0" />
-                {feedback}
+              <div className="mx-5 mb-4 flex items-center justify-between gap-3 text-sm text-green-700 bg-green-50 border border-green-200 rounded-md px-4 py-3">
+                <span className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 shrink-0" />
+                  {feedback}
+                </span>
+                <Link href="/admin/inbox" className="font-medium underline shrink-0">
+                  View in Inbox
+                </Link>
               </div>
             )}
             {status === "error" && (

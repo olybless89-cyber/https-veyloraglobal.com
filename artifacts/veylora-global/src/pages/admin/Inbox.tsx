@@ -98,7 +98,8 @@ export default function Inbox() {
           <InboxIcon className="h-8 w-8" /> Inbox
         </h1>
         <p className="text-muted-foreground mt-1">
-          Emails sent to your connected mailbox appear here automatically.
+          Emails sent to your connected mailbox, and emails you send from{" "}
+          <span className="font-medium text-foreground">Send Email</span>, both appear here automatically.
         </p>
       </div>
 
@@ -115,9 +116,11 @@ export default function Inbox() {
             </div>
           ) : threads.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              No messages yet. Once you connect a receiving mailbox in{" "}
+              No messages yet. Send an email from{" "}
+              <span className="font-medium text-foreground">Send Email</span>, or once your receiving
+              mailbox is connected in{" "}
               <span className="font-medium text-foreground">Settings → Integrations</span>, incoming
-              emails will show up here.
+              emails will show up here too.
             </div>
           ) : (
             <ul className="divide-y">
