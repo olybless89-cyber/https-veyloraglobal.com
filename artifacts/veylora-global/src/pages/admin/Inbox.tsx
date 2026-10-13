@@ -12,6 +12,8 @@ interface InboxThread {
   latestAt: string
   unreadCount: number
   messageCount: number
+  hasInbound: boolean
+  hasOutbound: boolean
 }
 
 interface EmailMessage {
@@ -47,6 +49,11 @@ export default function Inbox() {
   const queryClient = useQueryClient()
   const [selectedThread, setSelectedThread] = React.useState<string | null>(null)
   const [replyText, setReplyText] = React.useState("")
+  // "inbox" = threads that have at least one message a customer sent in.
+  // "sent" = threads you started (Send Email, or an inbox reply) that
+  // haven't gotten a reply yet — the moment one does, it has inbound
+  // messages too and moves over to the Inbox tab, like a real mail client.
+  const [tab, setTab] = React.useState<"inbox" | "sent">("inbox")
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["admin-inbox"],
@@ -89,7 +96,15 @@ export default function Inbox() {
     replyMutation.mutate(replyText)
   }
 
-  const threads = data?.threads ?? []
+  const allThreads = data?.threads ?? []
+  const inboxThreads = allThreads.filter((t) => t.hasInbound)
+  const sentThreads = allThreads.filter((t) => !t.hasInbound && t.hasOutbound)
+  const threads = tab === "inbox" ? inboxThreads : sentThreads
+
+  const switchTab = (next: "inbox" | "sent") => {
+    setTab(next)
+    setSelectedThread(null)
+  }
 
   return (
     <AdminLayout>
@@ -103,7 +118,38 @@ export default function Inbox() {
         </p>
       </div>
 
-      <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex h-[calc(100vh-14rem)] min-h-[420px]">
+      <div className="flex gap-1 mb-4 border-b">
+        <button
+          onClick={() => switchTab("inbox")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            tab === "inbox"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <InboxIcon className="h-4 w-4" />
+          Inbox
+          {inboxThreads.length > 0 && (
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{inboxThreads.length}</span>
+          )}
+        </button>
+        <button
+          onClick={() => switchTab("sent")}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            tab === "sent"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Send className="h-4 w-4" />
+          Sent
+          {sentThreads.length > 0 && (
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded-full">{sentThreads.length}</span>
+          )}
+        </button>
+      </div>
+
+      <div className="bg-card border rounded-xl shadow-sm overflow-hidden flex h-[calc(100vh-17rem)] min-h-[380px]">
         {/* Thread list — hidden on mobile once a thread is open */}
         <div className={`w-full md:w-80 shrink-0 border-r overflow-y-auto ${selectedThread ? "hidden md:block" : "block"}`}>
           {isLoading ? (
@@ -116,11 +162,19 @@ export default function Inbox() {
             </div>
           ) : threads.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              No messages yet. Send an email from{" "}
-              <span className="font-medium text-foreground">Send Email</span>, or once your receiving
-              mailbox is connected in{" "}
-              <span className="font-medium text-foreground">Settings → Integrations</span>, incoming
-              emails will show up here too.
+              {tab === "sent" ? (
+                <>
+                  Nothing sent yet. Emails you send from{" "}
+                  <span className="font-medium text-foreground">Send Email</span>, or as a reply here in
+                  the Inbox, show up in this tab.
+                </>
+              ) : (
+                <>
+                  No messages yet. Once your receiving mailbox is connected in{" "}
+                  <span className="font-medium text-foreground">Settings → Integrations</span>, incoming
+                  emails will show up here.
+                </>
+              )}
             </div>
           ) : (
             <ul className="divide-y">

@@ -31,6 +31,8 @@ router.get("/admin/inbox", async (req, res) => {
         latestAt: string;
         unreadCount: number;
         messageCount: number;
+        hasInbound: boolean;
+        hasOutbound: boolean;
       }
     >();
 
@@ -46,10 +48,14 @@ router.get("/admin/inbox", async (req, res) => {
           latestAt: row.createdAt.toISOString(),
           unreadCount: isUnread ? 1 : 0,
           messageCount: 1,
+          hasInbound: row.direction === "inbound",
+          hasOutbound: row.direction === "outbound",
         });
       } else {
         existing.messageCount += 1;
         if (isUnread) existing.unreadCount += 1;
+        if (row.direction === "inbound") existing.hasInbound = true;
+        if (row.direction === "outbound") existing.hasOutbound = true;
       }
     }
 
