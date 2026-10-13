@@ -1,8 +1,14 @@
 import { Router } from "express";
-import { sendEmail, getFromAddress } from "../lib/resend";
+import { sendEmail, getFromAddress, type EmailAttachment } from "../lib/resend";
 import { db, emailsTable } from "@workspace/db";
 
 const router = Router();
+
+// Resend's own per-email cap is well above this, but base64 inflates size
+// by ~33% and this travels inside one JSON request body (see the 15mb
+// express.json limit in app.ts) — 10mb of actual attachment content is a
+// generous ceiling for the receipts/photos/small PDFs this is meant for.
+const MAX_ATTACHMENTS_BYTES = 10 * 1024 * 1024;
 
 // POST /api/admin/send-email  (auth-protected)
 router.post("/admin/send-email", async (req, res) => {
@@ -11,10 +17,11 @@ router.post("/admin/send-email", async (req, res) => {
     return;
   }
 
-  const { to, subject, message } = req.body as {
+  const { to, subject, message, attachments } = req.body as {
     to?: string;
     subject?: string;
     message?: string;
+    attachments?: EmailAttachment[];
   };
 
   if (!to || !subject || !message) {
@@ -27,6 +34,25 @@ router.post("/admin/send-email", async (req, res) => {
   if (!emailRegex.test(to)) {
     res.status(400).json({ error: "Invalid recipient email address" });
     return;
+  }
+
+  let cleanAttachments: EmailAttachment[] | undefined;
+  if (attachments !== undefined) {
+    if (
+      !Array.isArray(attachments) ||
+      attachments.some(
+        (a) => typeof a?.filename !== "string" || !a.filename.trim() || typeof a?.content !== "string",
+      )
+    ) {
+      res.status(400).json({ error: "Attachments are malformed" });
+      return;
+    }
+    const totalBytes = attachments.reduce((sum, a) => sum + Math.ceil((a.content.length * 3) / 4), 0);
+    if (totalBytes > MAX_ATTACHMENTS_BYTES) {
+      res.status(400).json({ error: "Attachments are too large — 10MB total limit" });
+      return;
+    }
+    cleanAttachments = attachments;
   }
 
   try {
@@ -44,7 +70,12 @@ router.post("/admin/send-email", async (req, res) => {
       </div>
     `;
 
-    await sendEmail(to, subject, html);
+    await sendEmail(to, subject, html, cleanAttachments);
+
+    const attachmentNote =
+      cleanAttachments && cleanAttachments.length > 0
+        ? `\n\n[Attached: ${cleanAttachments.map((a) => a.filename).join(", ")}]`
+        : "";
 
     // Log it the same way an inbox reply is logged, so it shows up as a
     // thread in Admin → Inbox (previously this route sent via Resend but
@@ -60,7 +91,7 @@ router.post("/admin/send-email", async (req, res) => {
         fromAddress,
         toAddress: to,
         subject,
-        textBody: message,
+        textBody: message + attachmentNote,
         htmlBody: html,
         messageId: "",
         threadId: to.toLowerCase().trim(),

@@ -1,9 +1,17 @@
 import { getSettingsMap } from "./settings";
 
+export interface EmailAttachment {
+  /** Original filename, shown to the recipient (e.g. "receipt.pdf"). */
+  filename: string;
+  /** Base64-encoded file content, no "data:...;base64," prefix. */
+  content: string;
+}
+
 export async function sendEmail(
   to: string | string[],
   subject: string,
   html: string,
+  attachments?: EmailAttachment[],
 ): Promise<void> {
   const settings = await getSettingsMap(["resend_api_key", "from_email"]);
   const apiKey = settings.resend_api_key ?? process.env.RESEND_API_KEY;
@@ -20,7 +28,13 @@ export async function sendEmail(
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: fromAddress, to, subject, html }),
+    body: JSON.stringify({
+      from: fromAddress,
+      to,
+      subject,
+      html,
+      ...(attachments && attachments.length > 0 ? { attachments } : {}),
+    }),
   });
 
   if (!response.ok) {

@@ -1,11 +1,35 @@
 import * as React from "react"
 import { Link } from "wouter"
 import { AdminLayout } from "@/components/layout/AdminLayout"
-import { Mail, Send, CheckCircle, AlertCircle } from "lucide-react"
+import { Mail, Send, CheckCircle, AlertCircle, Paperclip, X, FileText } from "lucide-react"
 import { useQuery } from "@tanstack/react-query"
 import { customFetch } from "@workspace/api-client-react"
 
 type Status = "idle" | "loading" | "success" | "error"
+
+// Matches MAX_ATTACHMENTS_BYTES in the api-server route — checked here too
+// so the user finds out before uploading/sending, not after.
+const MAX_ATTACHMENTS_BYTES = 10 * 1024 * 1024
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      // readAsDataURL yields "data:<mime>;base64,<data>" — Resend wants
+      // just the base64 payload.
+      const result = reader.result as string
+      resolve(result.slice(result.indexOf(",") + 1))
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
 
 export default function SendEmail() {
   const [to, setTo] = React.useState("")
@@ -13,6 +37,28 @@ export default function SendEmail() {
   const [message, setMessage] = React.useState("")
   const [status, setStatus] = React.useState<Status>("idle")
   const [feedback, setFeedback] = React.useState("")
+  const [attachments, setAttachments] = React.useState<File[]>([])
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const totalAttachmentBytes = attachments.reduce((sum, f) => sum + f.size, 0)
+
+  const handleFilesPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(e.target.files ?? [])
+    e.target.value = "" // allow re-picking the same file later
+    if (picked.length === 0) return
+
+    const existingBytes = attachments.reduce((sum, f) => sum + f.size, 0)
+    const newBytes = picked.reduce((sum, f) => sum + f.size, 0)
+    if (existingBytes + newBytes > MAX_ATTACHMENTS_BYTES) {
+      setStatus("error")
+      setFeedback(`Attachments can't exceed ${formatBytes(MAX_ATTACHMENTS_BYTES)} total.`)
+      return
+    }
+    setAttachments((prev) => [...prev, ...picked])
+  }
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index))
+  }
 
   const { data: adminSettings } = useQuery({
     queryKey: ["admin-settings"],
@@ -28,10 +74,17 @@ export default function SendEmail() {
     setFeedback("")
 
     try {
+      const encodedAttachments = await Promise.all(
+        attachments.map(async (file) => ({
+          filename: file.name,
+          content: await fileToBase64(file),
+        })),
+      )
+
       const res = await fetch("/api/admin/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to, subject, message }),
+        body: JSON.stringify({ to, subject, message, attachments: encodedAttachments }),
       })
 
       const data = await res.json()
@@ -45,6 +98,7 @@ export default function SendEmail() {
         setTo("")
         setSubject("")
         setMessage("")
+        setAttachments([])
       }
     } catch {
       setStatus("error")
@@ -109,6 +163,51 @@ export default function SendEmail() {
                 placeholder="Write your message here..."
                 className="w-full text-sm bg-transparent focus:outline-none resize-y placeholder:text-muted-foreground/50 leading-relaxed"
               />
+            </div>
+
+            {/* Attachments */}
+            <div className="px-5 py-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFilesPicked}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Paperclip className="h-4 w-4" />
+                Attach files or receipts
+              </button>
+
+              {attachments.length > 0 && (
+                <ul className="mt-3 space-y-1.5">
+                  {attachments.map((file, i) => (
+                    <li
+                      key={`${file.name}-${i}`}
+                      className="flex items-center gap-2 text-sm bg-muted/40 rounded-md px-3 py-1.5"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate flex-1">{file.name}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{formatBytes(file.size)}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(i)}
+                        aria-label={`Remove ${file.name}`}
+                        className="text-muted-foreground hover:text-red-600 transition-colors shrink-0"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                  <li className="text-xs text-muted-foreground pt-0.5">
+                    {formatBytes(totalAttachmentBytes)} of {formatBytes(MAX_ATTACHMENTS_BYTES)}
+                  </li>
+                </ul>
+              )}
             </div>
 
             {/* Feedback */}

@@ -48,6 +48,11 @@ app.use(
 app.use(cors({ origin: true, credentials: true }));
 app.use(
   express.json({
+    // Raised from Express's 100kb default so Send Email attachments
+    // (base64-encoded in the JSON body) have room — 15mb of base64 is
+    // roughly 10-11mb of actual file content, well above Resend's own
+    // per-email size ceiling, so this is the effective limit in practice.
+    limit: "15mb",
     // Stash the raw request body alongside the parsed one so the Resend
     // inbound-email webhook route can verify its signature against the
     // exact bytes Resend sent (signature verification breaks if it's
@@ -57,7 +62,7 @@ app.use(
     },
   }),
 );
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
